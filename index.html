@@ -322,19 +322,19 @@ body {
 
 <div id="game-area">
   <div id="top-row">
-    <div class="top-card-col" id="waste-col">
-      <div class="card-slot" id="waste-empty"></div>
-    </div>
+    <div class="top-card-col" id="f0-col"><div class="card-slot foundation-slot" id="f0">&#9824;</div></div>
+    <div class="top-card-col" id="f1-col"><div class="card-slot foundation-slot" id="f1">&#9829;</div></div>
+    <div class="top-card-col" id="f2-col"><div class="card-slot foundation-slot" id="f2">&#9830;</div></div>
+    <div class="top-card-col" id="f3-col"><div class="card-slot foundation-slot" id="f3">&#9827;</div></div>
+    <div id="spacer"></div>
     <div class="top-card-col" id="stock-col">
       <div class="card-slot" id="stock-slot" onclick="drawFromStock()">
         <div id="stock-recycle" style="display:none">&#8635;</div>
       </div>
     </div>
-    <div id="spacer"></div>
-    <div class="top-card-col" id="f0-col"><div class="card-slot foundation-slot" id="f0">&#9824;</div></div>
-    <div class="top-card-col" id="f1-col"><div class="card-slot foundation-slot" id="f1">&#9829;</div></div>
-    <div class="top-card-col" id="f2-col"><div class="card-slot foundation-slot" id="f2">&#9830;</div></div>
-    <div class="top-card-col" id="f3-col"><div class="card-slot foundation-slot" id="f3">&#9827;</div></div>
+    <div class="top-card-col" id="waste-col">
+      <div class="card-slot" id="waste-empty"></div>
+    </div>
   </div>
 
   <div id="tableau">
@@ -525,14 +525,18 @@ function renderWaste(cw) {
   const empty = document.getElementById('waste-empty');
   if (waste.length === 0) { empty.style.visibility = 'visible'; return; }
   empty.style.visibility = 'hidden';
-  const start  = Math.max(0, waste.length - 3);
-  const fanOff = Math.round(cw * 0.3);
+  const start      = Math.max(0, waste.length - 3);
+  const visCount   = waste.length - start;           // 1, 2, or 3
+  const fanOff     = Math.round(cw * 0.3);
   for (let i = start; i < waste.length; i++) {
-    const fanIdx = i - start;
+    const fanIdx = i - start;                        // 0 = oldest visible, visCount-1 = top
     const isTop  = i === waste.length - 1;
     const el = createCardEl(waste[i], {type:'waste'}, i);
     sizeCard(el, cw);
-    el.style.top = '0'; el.style.left = (fanIdx * fanOff)+'px'; el.style.zIndex = fanIdx+1;
+    // Fan spreads LEFT: top card sits at left=0, earlier cards peek out to the left
+    el.style.top    = '0';
+    el.style.left   = ((fanIdx - (visCount - 1)) * fanOff) + 'px';
+    el.style.zIndex = fanIdx + 1;
     if (!isTop) el.style.pointerEvents = 'none';
     col.appendChild(el);
   }
