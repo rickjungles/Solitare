@@ -558,8 +558,8 @@ function renderFoundations(cw) {
 
 function renderTableau(cw) {
   const cardH  = cw * 1.4;
-  const offDown = Math.round(cw * 0.22);
-  const offUp   = Math.round(cw * 0.36);
+  const offDown = Math.round(cw * 0.26);
+  const offUp   = Math.round(cw * 0.42);
   for (let col = 0; col < 7; col++) {
     const colEl = document.getElementById('col'+col);
     colEl.querySelectorAll('.card').forEach(e => e.remove());
