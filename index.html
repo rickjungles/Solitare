@@ -146,30 +146,30 @@ body {
 .card.black { color: #1a1a1a; }
 
 /* ── Card face elements ── */
-.corner {
+.card-rank-tl {
   position: absolute;
-  font-size: 0.58em;
-  line-height: 1.15;
+  top: 3px; left: 5px;
+  font-size: 1.5em;
   font-weight: bold;
-  text-align: center;
-  pointer-events: none;
-}
-.corner.tl { top: 2px; left: 3px; }
-.corner.br { bottom: 2px; right: 3px; transform: rotate(180deg); }
-.cr { font-size: 1.35em; line-height: 1; display: block; }
-.card-center {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   line-height: 1;
-  gap: 1px;
   pointer-events: none;
 }
-.card-rank { font-size: 1.5em; font-weight: bold; line-height: 1; }
-.card-suit { font-size: 1.7em; line-height: 1; }
+.card-suit-tr {
+  position: absolute;
+  top: 4px; right: 5px;
+  font-size: 1.1em;
+  line-height: 1;
+  pointer-events: none;
+}
+.card-suit-main {
+  position: absolute;
+  left: 50%;
+  top: 60%;
+  transform: translate(-50%, -50%);
+  font-size: 3.2em;
+  line-height: 1;
+  pointer-events: none;
+}
 
 /* ── Drag ghost ── */
 .card.dragging {
@@ -466,9 +466,9 @@ function cardWidth() {
 // ── Build card face HTML ──────────────────────────────────────
 function buildCardFace(card) {
   const sym = SUIT_SYM[card.suit], r = card.rank;
-  return `<div class="corner tl"><span class="cr">${r}</span>${sym}</div>
-          <div class="card-center"><div class="card-rank">${r}</div><div class="card-suit">${sym}</div></div>
-          <div class="corner br"><span class="cr">${r}</span>${sym}</div>`;
+  return `<div class="card-rank-tl">${r}</div>
+          <div class="card-suit-tr">${sym}</div>
+          <div class="card-suit-main">${sym}</div>`;
 }
 
 // ── Create card element ───────────────────────────────────────
