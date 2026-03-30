@@ -310,7 +310,6 @@ body {
   <h1>&#9824; Solitaire</h1>
   <div id="score-display">Score: <span id="score">0</span></div>
   <div class="toolbar-buttons">
-    <button id="undo-btn" onclick="undo()" disabled>&#8617; Undo</button>
     <button onclick="showScores()">&#127942;</button>
     <button onclick="newGame()">&#8635; New</button>
   </div>
@@ -406,7 +405,7 @@ function cloneState() {
 }
 function saveState() {
   history.push(cloneState());
-  if (history.length > 50) history.shift();
+  if (history.length > 100) history.shift();
   refreshUndoBtn();
 }
 function undo() {
@@ -944,5 +943,25 @@ function renderScoresPanel() {
 window.addEventListener('resize', () => render());
 newGame();
 </script>
+
+<button id="undo-btn" onclick="undo()" disabled>&#8617; Undo</button>
+<style>
+#undo-btn {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  background: linear-gradient(180deg, #f5d060 0%, #d4a820 100%);
+  border: 1px solid #a07810;
+  border-radius: 6px;
+  padding: 10px 18px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #3a2000;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+  z-index: 200;
+}
+#undo-btn:disabled { opacity: 0.4; cursor: default; }
+</style>
 </body>
 </html>
