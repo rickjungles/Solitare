@@ -81,7 +81,7 @@ body {
 /* ── Game Area ── */
 #game-area {
   padding: 8px;
-  max-width: 520px;
+  max-width: 560px;
   margin: 0 auto;
 }
 #top-row {
@@ -148,7 +148,7 @@ body {
 /* ── Card face elements ── */
 .corner {
   position: absolute;
-  font-size: 0.52em;
+  font-size: 0.58em;
   line-height: 1.15;
   font-weight: bold;
   text-align: center;
@@ -156,6 +156,7 @@ body {
 }
 .corner.tl { top: 2px; left: 3px; }
 .corner.br { bottom: 2px; right: 3px; transform: rotate(180deg); }
+.cr { font-size: 1.35em; line-height: 1; display: block; }
 .card-center {
   position: absolute;
   top: 50%; left: 50%;
@@ -465,9 +466,9 @@ function cardWidth() {
 // ── Build card face HTML ──────────────────────────────────────
 function buildCardFace(card) {
   const sym = SUIT_SYM[card.suit], r = card.rank;
-  return `<div class="corner tl">${r}<br>${sym}</div>
+  return `<div class="corner tl"><span class="cr">${r}</span>${sym}</div>
           <div class="card-center"><div class="card-rank">${r}</div><div class="card-suit">${sym}</div></div>
-          <div class="corner br">${r}<br>${sym}</div>`;
+          <div class="corner br"><span class="cr">${r}</span>${sym}</div>`;
 }
 
 // ── Create card element ───────────────────────────────────────
