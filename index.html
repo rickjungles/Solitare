@@ -37,6 +37,15 @@ body {
   font-size: 13px;
   white-space: nowrap;
 }
+#version-label {
+  position: fixed;
+  bottom: 6px;
+  left: 8px;
+  color: rgba(255,255,255,0.35);
+  font-size: 10px;
+  pointer-events: none;
+  user-select: none;
+}
 .toolbar-buttons { display: flex; gap: 5px; }
 .toolbar-buttons button {
   background: linear-gradient(180deg, #f5d060 0%, #d4a820 100%);
@@ -310,6 +319,7 @@ body {
   <h1>&#9824; Solitaire</h1>
   <div id="score-display">Score: <span id="score">0</span></div>
   <div class="toolbar-buttons">
+    <button id="mute-btn" onclick="toggleMute()" title="Toggle sound">&#128266;</button>
     <button onclick="showScores()">&#127942;</button>
     <button onclick="newGame()">&#8635; New</button>
   </div>
@@ -385,6 +395,8 @@ let score = 0;
 let history = [];
 let autoCompleting = false;
 let scoreRecorded  = false;
+let gameStartTime = null;
+let gameTimerStarted = false;
 
 // ── Helpers ───────────────────────────────────────────────────
 const makeCard  = (rank, suit, faceUp=false) => ({ rank, suit, faceUp });
@@ -426,6 +438,7 @@ function refreshUndoBtn() {
 // ── New Game ──────────────────────────────────────────────────
 function newGame() {
   history = []; score = 0; autoCompleting = false; scoreRecorded = false;
+  gameStartTime = null; gameTimerStarted = false;
   foundations = [[],[],[],[]];
   tableau = [[],[],[],[],[],[],[]];
   waste = []; stock = [];
@@ -456,6 +469,86 @@ function addScore(delta) {
   score = Math.max(0, score + delta);
   document.getElementById('score').textContent = score;
 }
+
+// ── Sound ─────────────────────────────────────────────────────
+let audioCtx = null;
+let soundMuted = localStorage.getItem('solitaire_muted') === 'true';
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playCardFlip() {
+  if (soundMuted) return;
+  const ctx = getAudioCtx();
+  const bufferSize = Math.floor(ctx.sampleRate * 0.055);
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource();
+  src.buffer = buffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = 2800;
+  filter.Q.value = 0.6;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.18, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.055);
+  src.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+  src.start();
+}
+
+function playCardPlace() {
+  if (soundMuted) return;
+  const ctx = getAudioCtx();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(260, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(90, ctx.currentTime + 0.07);
+  gain.gain.setValueAtTime(0.28, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.07);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(); osc.stop(ctx.currentTime + 0.07);
+}
+
+function playTada() {
+  if (soundMuted) return;
+  const ctx = getAudioCtx();
+  // Short fanfare: three ascending notes, then a held chord
+  const notes = [
+    { freq: 392, start: 0.0,  dur: 0.12 },  // G4
+    { freq: 523, start: 0.1,  dur: 0.12 },  // C5
+    { freq: 659, start: 0.2,  dur: 0.12 },  // E5
+    { freq: 784, start: 0.32, dur: 0.55 },  // G5 (held)
+    { freq: 988, start: 0.32, dur: 0.55 },  // B5 (held, chord)
+  ];
+  notes.forEach(({ freq, start, dur }) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    const t = ctx.currentTime + start;
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.22, t + 0.02);
+    gain.gain.setValueAtTime(0.22, t + dur - 0.05);
+    gain.gain.linearRampToValueAtTime(0, t + dur);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t); osc.stop(t + dur);
+  });
+}
+
+function toggleMute() {
+  soundMuted = !soundMuted;
+  localStorage.setItem('solitaire_muted', soundMuted);
+  document.getElementById('mute-btn').textContent = soundMuted ? '🔇' : '🔊';
+}
+
+// Apply persisted mute state on load
+document.addEventListener('DOMContentLoaded', () => {
+  if (soundMuted) document.getElementById('mute-btn').textContent = '🔇';
+});
 
 // ── Card width ────────────────────────────────────────────────
 function cardWidth() {
@@ -577,16 +670,17 @@ function renderTableau(cw) {
 // ── Draw stock (draw-3) ───────────────────────────────────────
 function drawFromStock() {
   if (autoCompleting) return;
+  if (!gameTimerStarted) { gameStartTime = Date.now(); gameTimerStarted = true; }
   saveState();
   if (stock.length === 0) {
     stock = [...waste].reverse().map(c => { c.faceUp = false; return c; });
     waste = [];
-    addScore(-100);
   } else {
     const count = Math.min(3, stock.length);
     for (let i = 0; i < count; i++) {
       const card = stock.pop(); card.faceUp = true; waste.push(card);
     }
+    playCardFlip();
   }
   render();
 }
@@ -615,7 +709,7 @@ function removeFromSource(loc, count) {
   } else if (loc.type === 'tableau') {
     tableau[loc.col].splice(tableau[loc.col].length - count, count);
     const col = tableau[loc.col];
-    if (col.length > 0 && !col[col.length-1].faceUp) { col[col.length-1].faceUp = true; addScore(5); }
+    if (col.length > 0 && !col[col.length-1].faceUp) { col[col.length-1].faceUp = true; addScore(5); playCardFlip(); }
   }
 }
 
@@ -623,16 +717,20 @@ function removeFromSource(loc, count) {
 let drag = null;
 
 function performDrop(target) {
+  if (!gameTimerStarted) { gameStartTime = Date.now(); gameTimerStarted = true; }
   const { cards, sourceLocation } = drag, card = cards[0];
   if (target.type === 'foundation') {
     if (cards.length !== 1 || !canPlaceOnFoundation(card, target.fi)) return false;
     removeFromSource(sourceLocation, 1);
-    foundations[target.fi].push(card); addScore(15); checkWin(); return true;
+    foundations[target.fi].push(card); addScore(10); playCardPlace(); checkWin(); return true;
   }
   if (target.type === 'tableau') {
     if (!canPlaceOnTableau(card, target.col)) return false;
     removeFromSource(sourceLocation, cards.length);
-    tableau[target.col].push(...cards); addScore(5); return true;
+    tableau[target.col].push(...cards);
+    addScore(sourceLocation.type === 'foundation' ? -15 : 5);
+    playCardPlace();
+    return true;
   }
   return false;
 }
@@ -815,7 +913,7 @@ async function flyCardToFoundation(srcLoc, card, fi) {
     // Fallback: instant move
     removeFromSource(srcLoc, 1);
     foundations[fi].push(card);
-    addScore(15);
+    addScore(10); playCardPlace();
     return;
   }
 
@@ -849,7 +947,7 @@ async function flyCardToFoundation(srcLoc, card, fi) {
   // Commit to game state
   removeFromSource(srcLoc, 1);
   foundations[fi].push(card);
-  addScore(15);
+  addScore(10); playCardPlace();
 
   flyer.remove();
   render();
@@ -880,11 +978,18 @@ async function doAutoComplete() {
 // ── Win ───────────────────────────────────────────────────────
 function checkWin() {
   if (foundations.every(p => p.length === 13) && !scoreRecorded) {
-    addScore(500);
+    let timeBonus = 0;
+    if (gameTimerStarted && gameStartTime) {
+      const elapsed = Math.max(1, Math.floor((Date.now() - gameStartTime) / 1000));
+      timeBonus = Math.floor(700000 / elapsed);
+    }
+    addScore(timeBonus);
     recordWinScore();
+    playTada();
     const delay = autoCompleting ? 150 : 300;
     setTimeout(() => {
-      document.getElementById('win-score-text').textContent = 'Final Score: ' + score;
+      const timeBonusStr = timeBonus > 0 ? '  (+' + timeBonus.toLocaleString() + ' time bonus)' : '';
+      document.getElementById('win-score-text').textContent = 'Final Score: ' + score + timeBonusStr;
       document.getElementById('win-overlay').classList.add('show');
     }, delay);
   }
@@ -963,5 +1068,6 @@ newGame();
 }
 #undo-btn:disabled { opacity: 0.4; cursor: default; }
 </style>
+<div id="version-label">v1.0</div>
 </body>
 </html>
