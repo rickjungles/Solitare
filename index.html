@@ -96,7 +96,8 @@ body {
 #top-row {
   display: flex;
   gap: 6px;
-  margin-bottom: 8px;
+  margin-top: 5px;
+  margin-bottom: 13px;
   align-items: flex-start;
 }
 #spacer { flex: 1; }
@@ -311,12 +312,64 @@ body {
   cursor: pointer;
   color: #3a2000;
 }
+/* ── About overlay ── */
+#about-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.78);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+}
+#about-overlay.show { display: flex; }
+#about-panel {
+  background: linear-gradient(180deg, #2a1a00 0%, #150e00 100%);
+  border: 2px solid #d4a820;
+  border-radius: 12px;
+  padding: 26px 28px 20px;
+  min-width: 240px;
+  max-width: 320px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.85);
+  text-align: center;
+}
+#about-panel h2 {
+  color: #f5d060;
+  font-size: 22px;
+  margin-bottom: 16px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+#about-panel p {
+  color: #ddd;
+  font-size: 14px;
+  margin: 6px 0;
+}
+#about-panel .version {
+  color: #d4a820;
+  font-size: 13px;
+  margin-top: 14px;
+}
+#about-close-row {
+  margin-top: 20px;
+}
+#about-close-row button {
+  background: #d4a820;
+  color: #1a0e00;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 22px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+}
+#about-close-row button:hover { background: #f5d060; }
 </style>
 </head>
 <body>
 
 <div id="toolbar">
-  <h1>&#9824; Solitaire</h1>
+  <h1 onclick="showAbout()" style="cursor:pointer;" title="About">&#9824; Solitaire</h1>
   <div id="score-display">Score: <span id="score">0</span></div>
   <div class="toolbar-buttons">
     <button id="mute-btn" onclick="toggleMute()" title="Toggle sound">&#128266;</button>
@@ -374,6 +427,16 @@ body {
     <h2>&#127942; Top 10 Scores</h2>
     <div id="scores-content"></div>
     <div id="scores-close-row"><button onclick="closeScores()">Close</button></div>
+  </div>
+</div>
+
+<!-- About overlay -->
+<div id="about-overlay" onclick="if(event.target===this)closeAbout()">
+  <div id="about-panel">
+    <h2>&#9824; Solitaire</h2>
+    <p>Written by Rick Jungles</p>
+    <p class="version">v1.0</p>
+    <div id="about-close-row"><button onclick="closeAbout()">Close</button></div>
   </div>
 </div>
 
@@ -620,7 +683,7 @@ function renderWaste(cw) {
   empty.style.visibility = 'hidden';
   const start      = Math.max(0, waste.length - 3);
   const visCount   = waste.length - start;           // 1, 2, or 3
-  const fanOff     = Math.round(cw * 0.3);
+  const fanOff     = Math.round(cw * 0.45);
   for (let i = start; i < waste.length; i++) {
     const fanIdx = i - start;                        // 0 = oldest visible, visCount-1 = top
     const isTop  = i === waste.length - 1;
@@ -1013,6 +1076,13 @@ function recordWinScore() {
   });
   scores.sort((a,b) => b.score - a.score);
   saveScores(scores.slice(0, 10));
+}
+
+function showAbout() {
+  document.getElementById('about-overlay').classList.add('show');
+}
+function closeAbout() {
+  document.getElementById('about-overlay').classList.remove('show');
 }
 
 function showScores() {
